@@ -1,0 +1,15 @@
+app-id: 'com.example.example'
+sdk: 'org.freedesktop.Sdk'
+runtime: 'org.freedesktop.Platform'
+runtime-version: '21.08'
+command: '/app/example'
+modules: 
+  - 
+    name: 'app'
+    buildsystem: 'simple'
+    sources: 
+      - 
+        type: 'dir'
+        path: '$FLUTTER_BUILD_DIR/linux/x64/$FLUTTER_MODE/bundle'
+
+
