@@ -1,16 +1,15 @@
 import 'dart:io';
 
-enum FlatpakInstallLocation { system, user }
-
 Future<Process> flatpakBuilder({
   required Directory buildDir,
   required File manifestFile,
   required Directory stateDir,
-  required FlatpakInstallLocation location,
+  String location = "user",
   required Directory cwd,
   bool install = false,
   bool run = false,
 }) async {
+  assert(location == "user" || location == "system");
   return await Process.start(
     "flatpak-builder",
     [
@@ -21,7 +20,7 @@ Future<Process> flatpakBuilder({
       "--state-dir",
       stateDir.absolute.path,
       "--force-clean",
-      location == FlatpakInstallLocation.system ? "--system" : "--user",
+      "--$location",
     ],
     workingDirectory: cwd.absolute.path,
   );

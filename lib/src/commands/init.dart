@@ -18,7 +18,7 @@ class InitCommand extends Command {
   Future<void> run() async {
     final project = await projectDir(Directory.current);
     final flatpakDir = Directory("${project!.path}/linux/flatpak");
-    final manifestFile = File("${flatpakDir.path}/manifest.yaml");
+    final manifestFile = File("${flatpakDir.path}/manifest.json");
     final pubSpec = await PubSpec.load(project);
     final desktopFile = File("${flatpakDir.path}/${pubSpec.name}.desktop");
     final appStreamFile = File("${flatpakDir.path}/metainfo.xml");

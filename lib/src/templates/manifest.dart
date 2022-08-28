@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_flatpak/src/helpers/string_ext.dart';
 import 'package:yaml_writer/yaml_writer.dart';
 
@@ -29,9 +31,8 @@ String flatpakManifestTemplate({
           }
         ]
       },
-     
     ]
   };
 
-  return YAMLWriter().write(template);
+  return jsonEncode(template);
 }
