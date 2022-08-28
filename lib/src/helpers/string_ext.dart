@@ -7,12 +7,15 @@ extension StringExt on String {
         continue;
       }
 
-      if (i == 0) newStr += this[i].toUpperCase();
-
-      if (this[i - 1] == ' ' || this[i - 1] == '_' || this[i - 1] == '_') {
+      if (i == 0) {
         newStr += this[i].toUpperCase();
+      } else if (this[i - 1] == ' ' ||
+          this[i - 1] == '_' ||
+          this[i - 1] == '_') {
+        newStr += this[i].toUpperCase();
+      } else {
+        newStr += this[i];
       }
-      newStr += this[i];
     }
 
     return newStr;
