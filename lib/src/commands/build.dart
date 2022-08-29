@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
-import 'package:flutter_flatpak/src/helpers/flatpak_builder.dart';
-import 'package:flutter_flatpak/src/helpers/helpers.dart';
 
+import '../helpers/flatpak_builder.dart';
+import '../helpers/cpu_arch.dart';
 import '../helpers/pubspec.dart';
 
 class BuildCommand extends Command {
@@ -59,7 +59,7 @@ class BuildCommand extends Command {
         "${buildRoot.path}/linux/${_cpuArch == CpuArch.arm64 ? "arm64" : "x64"}/$_mode");
     final programDir = Directory("${buildDir.path}/bundle");
     final flatpakBuildDir = Directory("${buildDir.path}/flatpak");
-    final manifestFile = File("${project.path}/linux/flatpak/manifest.json");
+    var manifestFile = File("${project.path}/linux/flatpak/manifest.json");
     final manifestTempFile =
         File("${project.path}/linux/flatpak/.manifest.tmp.json");
 

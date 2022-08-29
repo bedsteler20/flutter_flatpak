@@ -14,45 +14,38 @@ class InitCommand extends Command {
   final name = "init";
   final description = "Initialize a new Flatpak configs in the current project";
 
+  late String _appId;
+
+  @override
+  late final argParser = ArgParser()
+    ..addOption(
+      "app-id",
+      defaultsTo: "com.flutter.Example",
+      callback: (p0) => _appId,
+    );
+
   @override
   Future<void> run() async {
     final project = await projectDir(Directory.current);
     final flatpakDir = Directory("${project!.path}/linux/flatpak");
     final manifestFile = File("${flatpakDir.path}/manifest.json");
     final pubSpec = await PubSpec.load(project);
-    final desktopFile = File("${flatpakDir.path}/${pubSpec.name}.desktop");
-    final appStreamFile = File("${flatpakDir.path}/metainfo.xml");
-
+    final desktopFile = File("${flatpakDir.path}/$_appId.desktop");
 
     print("creating manifest ${manifestFile.path}");
 
     await flatpakDir.create();
     await manifestFile.create();
-    await manifestFile
-        .writeAsString(flatpakManifestTemplate(libName: pubSpec.name!));
+    await manifestFile.writeAsString(flatpakManifestTemplate(
+        command: "/app/${pubSpec.name}", appId: _appId));
 
     if (!await desktopFile.exists()) {
       await desktopFile.create();
       await desktopFile.writeAsString(DesktopFile(
         name: "Flutter Demo",
         exec: "/app/${pubSpec.name}",
-        icon: "com.example.${pubSpec.name}",
+        icon: _appId,
       ).toString());
-    }
-
-
-    if (!await appStreamFile.exists()) {
-      final content = """<?xml version="1.0" encoding="UTF-8"?>
-<component type="application">
-  <id>com.example.${pubSpec.name!.pascalCase()}</id>
-  <name>${pubSpec.name}</name>
-  <summary>Flutter Demo</summary>
-  <metadata_license>CC0-1.0</metadata_license>
-  <developer_name>You</developer_name>
-  <url type="homepage">https://example.com</url>
-</component>""";
-      await appStreamFile.create();
-      await appStreamFile.writeAsString(content);
     }
   }
 }

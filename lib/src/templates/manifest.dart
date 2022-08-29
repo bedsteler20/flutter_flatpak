@@ -4,16 +4,17 @@ import 'package:flutter_flatpak/src/helpers/string_ext.dart';
 import 'package:yaml_writer/yaml_writer.dart';
 
 String flatpakManifestTemplate({
-  required String libName,
+  required String command,
+  required String appId,
 }) {
   final template = {
     "\$schema":
         "https://raw.githubusercontent.com/flatpak/flatpak-builder/main/data/flatpak-manifest.schema.json",
-    "app-id": "com.example.${libName.pascalCase()}",
+    "app-id": appId,
     "sdk": "org.freedesktop.Sdk",
     "runtime": "org.freedesktop.Platform",
     "runtime-version": "21.08",
-    "command": "/app/$libName",
+    "command": command,
     "finish-args": [
       "--share=network",
       "--socket=fallback-x11",
@@ -48,7 +49,19 @@ String flatpakManifestTemplate({
           }
         ]
       },
-      
+      {
+        "name": "desktop",
+        "buildsystem": "simple",
+        "build-commands": [
+          "install -Dm 644 $appId.desktop /app/share/applications/",
+        ],
+        "sources": [
+          {
+            "type": "file",
+            "path": "\$PROJECT_ROOT/linux/flatpak/$appId.desktop"
+          }
+        ]
+      },
     ]
   };
 

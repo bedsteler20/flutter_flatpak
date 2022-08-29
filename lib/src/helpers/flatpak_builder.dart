@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter_flatpak/src/helpers/helpers.dart';
+
+import 'cpu_arch.dart';
 
 Future<Process> flatpakBuilder({
   required Directory buildDir,
