@@ -1,8 +1,10 @@
-import 'package:flutter_flatpak/flutter_flatpak.dart';
+import 'dart:developer';
+import 'dart:io';
+
 import 'package:test/test.dart';
 
 void main() {
-  test('calculate', () {
-    expect(calculate(), 42);
-  });
+  final f = Directory("mydir/sub/test");
+  print("$f");
+  debugger();
 }

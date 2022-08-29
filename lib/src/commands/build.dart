@@ -3,10 +3,10 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
+import 'package:flutter_flatpak/src/project.dart';
 
 import '../helpers/flatpak_builder.dart';
 import '../helpers/cpu_arch.dart';
-import '../helpers/pubspec.dart';
 
 class BuildCommand extends Command {
   @override
@@ -18,6 +18,7 @@ class BuildCommand extends Command {
   late String _location;
   late bool _bundle;
   late CpuArch _cpuArch;
+  late FlutterProject _project;
 
   @override
   late final argParser = ArgParser()
@@ -51,55 +52,77 @@ class BuildCommand extends Command {
       }),
     );
 
+  Directory get _buildDir => Directory(
+      "${_project.root.path}build/linux/${_cpuArch == CpuArch.arm64 ? "arm64" : "x64"}/$_mode");
+
+  Future<void> _flutterBuild() async {
+    final buildCommand = await Process.start(
+      "flutter",
+      [
+        "build",
+        "linux",
+        "--$_mode",
+        "--target-platform=${_cpuArch == CpuArch.arm64 ? "linux-arm64" : "linux-x64"}",
+      ],
+      workingDirectory: _project.root.path,
+    );
+    stdout.addStream(buildCommand.stdout);
+    stderr.addStream(buildCommand.stderr);
+
+    await buildCommand.exitCode;
+  }
+
+  Future<Map> _readManifest() async {
+    var str =
+        await File("${_project.root.path}/linux/flatpak.json").readAsString();
+
+    str = str.replaceAll("\$PROJECT_ROOT", _project.root.path);
+    str = str.replaceAll("\$FLUTTER_MODE", _mode);
+    return jsonDecode(str);
+  }
+
+  Future<void> _bundleFlatpak(String appId) async {
+    print("Bundling flatpak");
+    final bundleProcess = await Process.start(
+      "flatpak",
+      [
+        "build-bundle",
+        _location == "user"
+            ? "${Platform.environment["HOME"]}/.local/share/flatpak/repo"
+            : "/var/lib/flatpak/repo",
+        "$_mode-$_cpuArch.flatpak",
+        appId,
+      ],
+      workingDirectory: _buildDir.path,
+    );
+    stderr.addStream(bundleProcess.stderr);
+    stdout.addStream(bundleProcess.stdout);
+    await bundleProcess.exitCode;
+  }
+
   @override
   run() async {
-    final project = await projectDir(Directory.current);
-    final buildRoot = Directory("${project!.path}/build");
-    final buildDir = Directory(
-        "${buildRoot.path}/linux/${_cpuArch == CpuArch.arm64 ? "arm64" : "x64"}/$_mode");
-    final programDir = Directory("${buildDir.path}/bundle");
-    final flatpakBuildDir = Directory("${buildDir.path}/flatpak");
-    var manifestFile = File("${project.path}/linux/flatpak/manifest.json");
+    _project = FlutterProject();
     final manifestTempFile =
-        File("${project.path}/linux/flatpak/.manifest.tmp.json");
+        File("${_project.root.path}/linux/flatpak/.manifest.tmp.json");
 
-    if (!await programDir.exists()) {
-      final buildCommand = await Process.start(
-        "flutter",
-        [
-          "build",
-          "linux",
-          "--$_mode",
-          "--target-platform=${_cpuArch == CpuArch.arm64 ? "linux-arm64" : "linux-x64"}",
-        ],
-        workingDirectory: project.path,
-      );
-      stdout.addStream(buildCommand.stdout);
-      stderr.addStream(buildCommand.stderr);
-
-      await buildCommand.exitCode;
+    if (!await File("${_buildDir.path}/bundle").exists()) {
+      await _flutterBuild();
     }
 
-    if (!await flatpakBuildDir.exists()) {
-      await flatpakBuildDir.create(recursive: true);
-    }
+    await Directory("${_buildDir.path}/flatpak").create();
 
-    final manifest = jsonDecode(
-      (await manifestFile.readAsString())
-          .replaceAll("\$PROJECT_ROOT", project.absolute.path)
-          .replaceAll("\$FLUTTER_MODE", _mode),
-    );
-    final appId = manifest["app-id"];
+    final manifest = await _readManifest();
 
     if (!await manifestTempFile.exists()) await manifestTempFile.create();
     await manifestTempFile.writeAsString(jsonEncode(manifest));
 
     final buildProcess = await flatpakBuilder(
-      buildDir: flatpakBuildDir,
+      buildDir: Directory("${_buildDir.path}/flatpak"),
       manifestFile: manifestTempFile,
-      stateDir: Directory("${buildDir.path}/.flatpak-builder"),
+      stateDir: Directory("${_buildDir.path}/.flatpak-builder"),
       location: _location,
-      cwd: Directory("${project.path}/linux/flatpak"),
+      cwd: Directory("${_project.root.path}/linux/flatpak"),
       install: true,
     );
 
@@ -108,22 +131,7 @@ class BuildCommand extends Command {
     await manifestTempFile.delete();
 
     if (_bundle) {
-      print("Bundling flatpak");
-      final bundleProcess = await Process.start(
-        "flatpak",
-        [
-          "build-bundle",
-          _location == "user"
-              ? "${Platform.environment["HOME"]}/.local/share/flatpak/repo"
-              : "/var/lib/flatpak/repo",
-          "$_mode-$_cpuArch.flatpak",
-          appId,
-        ],
-        workingDirectory: buildDir.path,
-      );
-      stderr.addStream(bundleProcess.stderr);
-      stdout.addStream(bundleProcess.stdout);
-      await bundleProcess.exitCode;
+      await _bundleFlatpak(manifest["app-id"]);
     }
   }
 }
