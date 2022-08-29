@@ -1,1 +1,28 @@
-{"app-id":"com.example.Example","sdk":"org.freedesktop.Sdk","runtime":"org.freedesktop.Platform","runtime-version":"21.08","command":"/app/example","finish-args":["--share=network","--socket=fallback-x11","--socket=wayland"],"modules":[{"name":"app","buildsystem":"simple","build-commands":["cp -r ./* /app/"],"sources":[{"type":"dir","path":"$PROJECT_ROOT/build/linux/x64/$FLUTTER_MODE/bundle"}]}]}
+{
+    "$schema": "https://raw.githubusercontent.com/flatpak/flatpak-builder/main/data/flatpak-manifest.schema.json",
+    "app-id": "com.example.Example",
+    "sdk": "org.freedesktop.Sdk",
+    "runtime": "org.freedesktop.Platform",
+    "runtime-version": "21.08",
+    "command": "/app/example",
+    "finish-args": [
+        "--share=network",
+        "--socket=fallback-x11",
+        "--socket=wayland"
+    ],
+    "modules": [
+        {
+            "name": "app",
+            "buildsystem": "simple",
+            "build-commands": [
+                "cp -r ./* /app/"
+            ],
+            "sources": [
+                {
+                    "type": "dir",
+                    "path": "$PROJECT_ROOT/build/linux/x64/$FLUTTER_MODE/bundle"
+                }
+            ]
+        }
+    ]
+}

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:flutter_flatpak/src/helpers/flatpak_builder.dart';
+import 'package:flutter_flatpak/src/helpers/helpers.dart';
 
 import '../helpers/pubspec.dart';
 
@@ -16,6 +17,7 @@ class BuildCommand extends Command {
   late String _mode;
   late String _location;
   late bool _bundle;
+  late CpuArch _cpuArch;
 
   @override
   late final argParser = ArgParser()
@@ -35,13 +37,26 @@ class BuildCommand extends Command {
       "bundle",
       defaultsTo: false,
       callback: (p0) => _bundle = p0,
+    )
+    ..addOption(
+      "target-platform",
+      callback: ((p0) {
+        if (p0 == "linux-arm64") {
+          _cpuArch = CpuArch.arm64;
+        } else if (p0 == "linux-x64") {
+          _cpuArch = CpuArch.x64;
+        } else {
+          _cpuArch = getCPUArchitecture();
+        }
+      }),
     );
 
   @override
   run() async {
     final project = await projectDir(Directory.current);
     final buildRoot = Directory("${project!.path}/build");
-    final buildDir = Directory("${buildRoot.path}/linux/x64/$_mode");
+    final buildDir = Directory(
+        "${buildRoot.path}/linux/${_cpuArch == CpuArch.arm64 ? "arm64" : "x64"}/$_mode");
     final programDir = Directory("${buildDir.path}/bundle");
     final flatpakBuildDir = Directory("${buildDir.path}/flatpak");
     final manifestFile = File("${project.path}/linux/flatpak/manifest.json");
@@ -51,7 +66,12 @@ class BuildCommand extends Command {
     if (!await programDir.exists()) {
       final buildCommand = await Process.start(
         "flutter",
-        ["build", "linux", "--$_mode"],
+        [
+          "build",
+          "linux",
+          "--$_mode",
+          "--target-platform=${_cpuArch == CpuArch.arm64 ? "linux-arm64" : "linux-x64"}",
+        ],
         workingDirectory: project.path,
       );
       stdout.addStream(buildCommand.stdout);
@@ -96,7 +116,7 @@ class BuildCommand extends Command {
           _location == "user"
               ? "${Platform.environment["HOME"]}/.local/share/flatpak/repo"
               : "/var/lib/flatpak/repo",
-          "$_mode.flatpak",
+          "$_mode-$_cpuArch.flatpak",
           appId,
         ],
         workingDirectory: buildDir.path,
