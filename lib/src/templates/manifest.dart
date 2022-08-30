@@ -19,6 +19,7 @@ String flatpakManifestTemplate({
       "--share=network",
       "--socket=fallback-x11",
       "--socket=wayland",
+      "--device=dri",
     ],
     "modules": [
       {
