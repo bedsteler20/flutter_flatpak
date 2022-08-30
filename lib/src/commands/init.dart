@@ -43,6 +43,19 @@ class InitCommand extends Command {
     await ogIcon.copy(newIcon.path);
   }
 
+  Future<void> _updateGitIgnore(Directory project) async {
+    final ignoreFile = File("${project.path}/linux/.gitignore");
+    if (await ignoreFile.exists()) {
+      final content = await ignoreFile.readAsString();
+      if (!content.contains(".manifest.tmp.json")) {
+        await ignoreFile.writeAsString(
+          "\n.manifest.tmp.json",
+          mode: FileMode.append,
+        );
+      }
+    }
+  }
+
   @override
   Future<void> run() async {
     final project = await projectDir(Directory.current);
@@ -73,6 +86,7 @@ class InitCommand extends Command {
       await appSteamFile.create(recursive: true);
       await appSteamFile.writeAsString(appStreamTemplate(_appId));
     }
+    await _updateGitIgnore(project);
 
     _stealIcon(project, 128);
     _stealIcon(project, 64);
