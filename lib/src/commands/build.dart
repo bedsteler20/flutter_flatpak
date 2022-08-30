@@ -53,10 +53,10 @@ class BuildCommand extends Command {
     );
 
   Directory get _buildDir => Directory(
-      "${_project.root.path}build/linux/${_cpuArch == CpuArch.arm64 ? "arm64" : "x64"}/$_mode");
+      "${_project.root.path}/build/linux/${_cpuArch == CpuArch.arm64 ? "arm64" : "x64"}/$_mode");
 
-  Future<void> _flutterBuild() async {
-    final buildCommand = await Process.start(
+  Future<Process> _flutterBuild() async {
+    return await Process.start(
       "flutter",
       [
         "build",
@@ -66,10 +66,6 @@ class BuildCommand extends Command {
       ],
       workingDirectory: _project.root.path,
     );
-    stdout.addStream(buildCommand.stdout);
-    stderr.addStream(buildCommand.stderr);
-
-    await buildCommand.exitCode;
   }
 
   Future<Map> _readManifest() async {
@@ -81,9 +77,9 @@ class BuildCommand extends Command {
     return jsonDecode(str);
   }
 
-  Future<void> _bundleFlatpak(String appId) async {
+  Future<Process> _bundleFlatpak(String appId) async {
     print("Bundling flatpak");
-    final bundleProcess = await Process.start(
+    return await Process.start(
       "flatpak",
       [
         "build-bundle",
@@ -95,19 +91,19 @@ class BuildCommand extends Command {
       ],
       workingDirectory: _buildDir.path,
     );
-    stderr.addStream(bundleProcess.stderr);
-    stdout.addStream(bundleProcess.stdout);
-    await bundleProcess.exitCode;
   }
 
   @override
   run() async {
     _project = FlutterProject();
     final manifestTempFile =
-        File("${_project.root.path}/linux/flatpak/.manifest.tmp.json");
+        File("${_project.root.path}/linux/.manifest.tmp.json");
 
     if (!await File("${_buildDir.path}/bundle").exists()) {
-      await _flutterBuild();
+      final flutterProcess = await _flutterBuild();
+      stdout.addStream(flutterProcess.stdout);
+      stderr.addStream(flutterProcess.stderr);
+      await flutterProcess.exitCode;
     }
 
     await Directory("${_buildDir.path}/flatpak").create();
@@ -122,16 +118,18 @@ class BuildCommand extends Command {
       manifestFile: manifestTempFile,
       stateDir: Directory("${_buildDir.path}/.flatpak-builder"),
       location: _location,
-      cwd: Directory("${_project.root.path}/linux/flatpak"),
+      cwd: Directory("${_project.root.path}/linux"),
       install: true,
     );
 
     stdout.addStream(buildProcess.stdout);
+    stderr.addStream(buildProcess.stderr);
     await buildProcess.exitCode;
     await manifestTempFile.delete();
 
     if (_bundle) {
-      await _bundleFlatpak(manifest["app-id"]);
+      final bundleProcess = await _bundleFlatpak(manifest["app-id"]);
+      await bundleProcess.exitCode;
     }
   }
 }
