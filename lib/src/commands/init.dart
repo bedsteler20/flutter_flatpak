@@ -48,7 +48,7 @@ class InitCommand extends Command {
     final project = await projectDir(Directory.current);
     final pubSpec = await PubSpec.load(project!);
 
-    final manifestFile = File("${project.path}/linux/flatpak.json");
+    final manifestFile = File("${project.path}/linux/flatpak.yaml");
     final desktopFile =
         File("${project.path}/linux/share/applications/$_appId.desktop");
     final appSteamFile =

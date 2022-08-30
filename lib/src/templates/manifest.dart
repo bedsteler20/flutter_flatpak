@@ -8,8 +8,6 @@ String flatpakManifestTemplate({
   required String appId,
 }) {
   final template = {
-    "\$schema":
-        "https://raw.githubusercontent.com/flatpak/flatpak-builder/main/data/flatpak-manifest.schema.json",
     "app-id": appId,
     "sdk": "org.freedesktop.Sdk",
     "runtime": "org.freedesktop.Platform",
@@ -67,8 +65,9 @@ String flatpakManifestTemplate({
       },
     ]
   };
-
-  return jsonEncode(template);
+  final schema = "# yaml-language-server: \$schema="
+      "https://raw.githubusercontent.com/flatpak/flatpak-builder/main/data/flatpak-manifest.schema.json\n";
+  return schema + YAMLWriter().convert(template);
 }
 
 String appStreamTemplate(String appId) {

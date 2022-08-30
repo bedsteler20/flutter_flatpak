@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:flutter_flatpak/src/project.dart';
+import 'package:yaml/yaml.dart';
 
 import '../helpers/flatpak_builder.dart';
 import '../helpers/cpu_arch.dart';
@@ -69,12 +70,21 @@ class BuildCommand extends Command {
   }
 
   Future<Map> _readManifest() async {
-    var str =
-        await File("${_project.root.path}/linux/flatpak.json").readAsString();
+    final jsonF = File("${_project.root.path}/linux/flatpak.json");
+    final yamlF = File("${_project.root.path}/linux/flatpak.yaml");
+    var str = "";
+    var isJson = false;
+
+    if (await jsonF.exists()) {
+      isJson = true;
+      str = await jsonF.readAsString();
+    } else {
+      str = await yamlF.readAsString();
+    }
 
     str = str.replaceAll("\$PROJECT_ROOT", _project.root.path);
     str = str.replaceAll("\$FLUTTER_MODE", _mode);
-    return jsonDecode(str);
+    return isJson ? jsonDecode(str) : loadYaml(str);
   }
 
   Future<Process> _bundleFlatpak(String appId) async {
